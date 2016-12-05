@@ -11,61 +11,62 @@ class MyDialog(QtGui.QWidget):
     def _setup_ui(self):
         layout = QtGui.QVBoxLayout()
 
-        self.b1 = QtGui.QCheckBox("Camera Rig Set-up")
-        self.b1.stateChanged.connect(lambda:self.btnstate(self.b1))
+        self.b1 = QtGui.QPushButton("Camera Rig Set-up")
+        self.b1.setCheckable(True)
+        self.b1.clicked.connect(lambda:self.btnstate(self.b1))
         layout.addWidget(self.b1)
       
-        self.b2 = QtGui.QCheckBox("Bake Dynamic Joints")
-        self.b2.toggled.connect(lambda:self.btnstate(self.b2))
+        self.b2 = QtGui.QPushButton("Bake Dynamic Joints")
+        self.b2.setCheckable(True)
+        self.b2.clicked.connect(lambda:self.btnstate(self.b2))
         layout.addWidget(self.b2)
 
-        self.b3 = QtGui.QCheckBox("12 to 24 fps")
-        self.b3.toggled.connect(lambda:self.btnstate(self.b3))
+        self.b3 = QtGui.QPushButton("12 to 24 fps")
+        self.b3.setCheckable(True)
+        self.b3.clicked.connect(lambda:self.btnstate(self.b3))
         layout.addWidget(self.b3)
 
-        self.b4 = QtGui.QCheckBox("Smooth Geo")
-        self.b4.toggled.connect(lambda:self.btnstate(self.b4))
+        self.b4 = QtGui.QPushButton("Smooth Geo")
+        self.b4.setCheckable(True)
+        self.b4.clicked.connect(lambda:self.btnstate(self.b4))
         layout.addWidget(self.b4)
 
-        self.b5 = QtGui.QCheckBox("Constrain Head")
-        self.b5.toggled.connect(lambda:self.btnstate(self.b5))
+        self.b5 = QtGui.QPushButton("Constrain Head")
+        self.b5.setCheckable(True)
+        self.b5.clicked.connect(lambda:self.btnstate(self.b5))
         layout.addWidget(self.b5)
 
-        self.b6 = QtGui.QCheckBox("Shadow Light Linker")
-        self.b6.toggled.connect(lambda:self.btnstate(self.b6))
+        self.b6 = QtGui.QPushButton("Shadow Light Linker")
+        self.b6.setCheckable(True)
+        self.b6.clicked.connect(lambda:self.btnstate(self.b6))
         layout.addWidget(self.b6)
 
         self.setLayout(layout)
         self.setWindowTitle("Render Set-up")
 
     def btnstate(self,b):
-        if b.text() == "Camera Rig Set-up":
-            if b.isChecked() == True:
+        if self.b1.isChecked():
                 print b.text()+" is selected"
                 rs.camRigSetup()
+                self.b1.setCheckable(False)
    
-        if b.text() == "Bake Dynamic Joints":
-            if b.isChecked() == True:
+        if self.b2.isChecked():
                 print b.text()+" is selected"
                 rs.bakeDynamicJoints()
 
-        if b.text() == "12 to 24 fps":
-            if b.isChecked() == True:
+        if self.b3.isChecked():
                 print b.text()+" is selected"
                 rs.timeShift()
 
-        if b.text() == "Smooth Geo":
-            if b.isChecked() == True:
+        if self.b4.isChecked():
                 print b.text()+" is selected"
                 rs.smoothGeo()          
 
-        if b.text() == "Constrain Head":
-            if b.isChecked() == True:
+        if self.b5.isChecked():
                 print b.text()+" is selected"
                 rs.constrainHead()
 
-        if b.text() == "Shadow Light Linker":
-            if b.isChecked() == True:
+        if self.b6.isChecked():
                 print b.text()+" is selected"
                 rs.shadowLightLinker()
 
