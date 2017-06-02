@@ -1,7 +1,10 @@
 import maya.cmds as cmds
+from sgfs import SGFS
+
 
 def camRigSetup():
 
+    sgfs = SGFS()
     #camera rig setup
     if cmds.ls('camRN') == []:
         raise ValueError("no camera called camRN")
