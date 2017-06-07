@@ -3,15 +3,23 @@ from sgfs import SGFS
 
 
 def camRigSetup():
-
     sgfs = SGFS()
-    #camera rig setup
+    path = '/Volumes/CGroot/Projects/MM52x2/assets/utilities/Camera_rig/rig/published/maya_scene/camera_rig/'
+    cam_entities = sgfs.entities_in_directory(path, entity_type='PublishEvent')
+    version = 0
+    for i in cam_entities:
+        if i[1].fetch('version') > version: 
+            version = i[1].fetch('version')
+            cam_entity = i[1]
+    cam_path = cam_entity.fetch('path')
+    print cam_path
+
     if cmds.ls('camRN') == []:
         raise ValueError("no camera called camRN")
     else: 
-        if cmds.referenceQuery('camRN', filename=True) != "/Volumes/CGroot/Projects/MM52x2/assets/utilities/Camera_rig/rig/published/maya_scene/camera_rig/v0005/Camera_rig,rig,v0005.ma":
+        if cmds.referenceQuery('camRN', filename=True) != cam_path:
             try: 
-                cmds.file("/Volumes/CGroot/Projects/MM52x2/assets/utilities/Camera_rig/rig/published/maya_scene/camera_rig/v0005/Camera_rig,rig,v0005.ma", loadReference="camRN", type="mayaAscii", options="v=0;")
+                cmds.file(cam_path, loadReference="camRN", type="mayaAscii", options='v=0;')
             except: 
                 raise ValueError("Error, no file found.") 
 
