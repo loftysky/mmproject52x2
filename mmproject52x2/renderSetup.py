@@ -2,17 +2,26 @@ import maya.cmds as cmds
 from sgfs import SGFS
 
 
+minTime = cmds.playbackOptions(query=True, minTime=True)
+maxTime = cmds.playbackOptions(query=True, maxTime=True)
+currentTime = cmds.currentTime(1)
+#hide poly for faster simulation
+hidePoly = cmds.modelEditor('modelPanel4', edit=True, polymeshes=False)
+
 def camRigSetup():
+    """
+    looks through shotgun for path of latest camera rig set-up.
+    """
     sgfs = SGFS()
+    sg = sgfs.session
     path = '/Volumes/CGroot/Projects/MM52x2/assets/utilities/Camera_rig/rig/published/maya_scene/camera_rig/'
     cam_entities = sgfs.entities_in_directory(path, entity_type='PublishEvent')
     version = 0
     for i in cam_entities:
         if i[1].fetch('version') > version: 
             version = i[1].fetch('version')
-            cam_entity = i[1]
-    cam_path = cam_entity.fetch('path')
-    print cam_path
+            latest_cam = i[1]
+    cam_path = latest_cam.fetch('path')
 
     if cmds.ls('camRN') == []:
         raise ValueError("no camera called camRN")
@@ -31,14 +40,9 @@ def bakeDynamicJoints():
     dated Nov 15/2016
     """
 
-    #find the start and end frame of the timeslider
-    minTime = cmds.playbackOptions(query=True, minTime=True)
-    maxTime = cmds.playbackOptions(query=True, maxTime=True)
-    currentTime = cmds.currentTime(1)
-        
     #hide poly for faster simulation
-    cmds.modelEditor('modelPanel4', edit=True, polymeshes=False)
-
+    hidePoly
+        
     #select all joints with the suffix "dynbake"
     try: 
         allJoints = cmds.select(cmds.ls('*dynbake*', recursive=True))
@@ -62,14 +66,9 @@ def timeShift():
     #last updated Nov 11 2016 
     #instructions : just run script
 
-    currentTime = cmds.currentTime(1)
-    
-    #find the start and end frame of the timeslider
-    minTime = cmds.playbackOptions(query=True, minTime=True)
-    maxTime = cmds.playbackOptions(query=True, maxTime=True)
 
     #hide poly for faster simulation
-    cmds.modelEditor('modelPanel4', edit=True, polymeshes=False)
+    hidePoly
 
         
     #select bake objects ie. ("*:*" + "*_Ctrl") and delects the flexi ctrls
@@ -144,7 +143,7 @@ def constrainHead():
     '''
     Constrain any in scene character's head to the main camera
     instructions : just run script
-    written by Kevin Zimny; revised to Python by Elaine
+    written by Kevin Zimny
     last updated Nov. 10
     '''
 
