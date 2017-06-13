@@ -31,9 +31,9 @@ def submit(scene, start=None, end=None, out_dir=None, name=None, shadow_scene=No
         cmds.file(scene, open=True, loadReferenceDepth='none')
 
         if start is None:
-            start = cmds.playbackOptions(query=True, minTime=True)
+            start = int(cmds.playbackOptions(query=True, minTime=True))
         if end is None:
-            end = cmds.playbackOptions(query=True, maxTime=True)
+            end = int(cmds.playbackOptions(query=True, maxTime=True))
 
     name = name or os.path.splitext(os.path.basename(scene))[0]
 
@@ -41,7 +41,7 @@ def submit(scene, start=None, end=None, out_dir=None, name=None, shadow_scene=No
     if not shadow_scene:
         shadow_scene = to_shadow_dimension(scene, make_parent=True)
         base, ext = os.path.splitext(shadow_scene)
-        timestamp = datetime.datetime.utcnow().replace(microsecond=0).isoformat('T')
+        timestamp = datetime.datetime.utcnow().replace(microsecond=0).isoformat('T').replace(':', '-')
         shadow_scene = '%s,%s%s' % (base, timestamp, ext)
 
     if not out_dir:
@@ -50,21 +50,25 @@ def submit(scene, start=None, end=None, out_dir=None, name=None, shadow_scene=No
         shadow_path = to_shadow_dimension(task_path)
         out_dir = os.path.join(shadow_path, 'maya', 'images')
 
-    shell_command = [
-        'vee', 'exec', '--bootstrap', # FIXME: For dev mode.
+    # TODO: Devmode without going into shebang cycle on Linux.
+    setup_command = [
+        #'vee', 'exec', '--bootstrap', # FIXME: For dev mode.
         'mm52x2-render', '--setup',
         '-s', str(start),
         '-e', str(end),
         '-o', out_dir,
         '-n', name,
-        '--shadow-scene', shadow_scene
+        '--shadow-scene', shadow_scene,
+        scene,
     ]
+    # TODO: Remove hostname when farmsoup GUI scan identify the worker.
+    setup_command = 'hostname; ' + shell_join(setup_command)
     setup_job = farmsoup.client.models.Job(
         name='Render setup.',
         label='setup',
     ).setup_subprocess(
-        [shell_join(shell_command)],
-        extra_env={'VEE_EXEC_ARGS': os.environ.get('VEE_EXEC_ARGS', '')}, # FIXME.
+        [setup_command],
+        #extra_env={'VEE_EXEC_ARGS': os.environ.get('VEE_EXEC_ARGS', '')}, # FIXME.
         shell=True,
     )
 
@@ -84,11 +88,11 @@ def submit(scene, start=None, end=None, out_dir=None, name=None, shadow_scene=No
         shadow_scene,
     ]
     # HACK: Get around escaping the variables.
-    render_command = shell_join(render_command).replace('__F', '$F')
+    render_command = 'hostname; ' + shell_join(render_command).replace('__F', '$F')
     render_job = farmsoup.client.models.Job(
         name='Render.',
         label='render',
-        #requirements='jobs["setup"].status == "complete"',
+        requirements='jobs["setup"].status == "complete"',
     ).setup_subprocess(
         [render_command],
         shell=True,
