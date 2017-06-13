@@ -152,6 +152,10 @@ def setup_renderer():
     # Set Renderer to MentalRay.
     cmds.setAttr('defaultRenderGlobals.currentRenderer', 'mentalRay', type='string')
 
+    # Set quality settings.
+    # TODO: Kevin wants "Production", but...
+    cmds.nodePreset(load=('defaultRenderGlobals', 'FinalFrameEXR'))
+
 
 #@_step
 def constrain_head():

@@ -80,6 +80,8 @@ def submit(scene, start=None, end=None, out_dir=None, name=None, shadow_scene=No
         '-s', '__F',
         '-e', '__F_end',
         '-cam', 'cam:MainCAM',
+        '-x', '1920',
+        '-y', '1080',
         '-rd', frames_dir,
         '-im', name,
         '-fnc', 'name.#.ext',
