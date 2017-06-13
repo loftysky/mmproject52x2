@@ -34,6 +34,15 @@ def _get_reference(namespace):
 
 
 @_step
+def disable_hud_expressions():
+    for node in cmds.ls(type='expression') or ():
+        expr = cmds.getAttr(node + '.expression') or ''
+        if expr.strip().startswith('headsUpDisplay'):
+            print 'Deleting', node
+            cmds.delete(node)
+
+
+@_step
 def assert_newest_camera():
     """Update the camera rig to the newest version in Shotgun."""
 
@@ -236,6 +245,7 @@ def set_shadow_switch():
 
 def setup_all():
     for step in steps:
+        print '=>', step
         step()
 
 
