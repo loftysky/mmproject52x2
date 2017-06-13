@@ -1,19 +1,13 @@
-import maya.cmds as cmds
+from maya import cmds
 from sgfs import SGFS
 
 
-minTime = cmds.playbackOptions(query=True, minTime=True)
-maxTime = cmds.playbackOptions(query=True, maxTime=True)
-currentTime = cmds.currentTime(1)
-#hide poly for faster simulation
-hidePoly = cmds.modelEditor('modelPanel4', edit=True, polymeshes=False)
 
 def camRigSetup():
     """
     looks through shotgun for path of latest camera rig set-up.
     """
     sgfs = SGFS()
-    sg = sgfs.session
     path = '/Volumes/CGroot/Projects/MM52x2/assets/utilities/Camera_rig/rig/published/maya_scene/camera_rig/'
     cam_entities = sgfs.entities_in_directory(path, entity_type='PublishEvent')
     version = 0
@@ -28,11 +22,11 @@ def camRigSetup():
     else: 
         if cmds.referenceQuery('camRN', filename=True) != cam_path:
             try: 
-                cmds.file(cam_path, loadReference="camRN", type="mayaAscii", options='v=0;')
+                cmds.file(cam_path, options='v=0;', loadReference="camRN", type="mayaAscii")
             except: 
                 raise ValueError("Error, no file found.") 
 
-def bakeDynamicJoints():
+def bakeDynamicJoints(minTime, maxTime, currentTime):
     """
     bake dynamic joints
     written by Mike Waldrum
@@ -41,7 +35,7 @@ def bakeDynamicJoints():
     """
 
     #hide poly for faster simulation
-    hidePoly
+    cmds.modelEditor('modelPanel4', edit=True, polymeshes=False)
         
     #select all joints with the suffix "dynbake"
     try: 
@@ -60,15 +54,17 @@ def bakeDynamicJoints():
         cmds.select(clear=True)
         
     
-def timeShift():
+def timeShift(minTime, maxTime, currentTime):
     #12 fps to 24 fps
     #written By kevin Zimny
     #last updated Nov 11 2016 
     #instructions : just run script
 
 
+    #find the start and end frame of the timeslider
+
     #hide poly for faster simulation
-    hidePoly
+    cmds.modelEditor('modelPanel4', edit=True, polymeshes=False)
 
         
     #select bake objects ie. ("*:*" + "*_Ctrl") and delects the flexi ctrls
@@ -176,17 +172,49 @@ def shadowLightLinker():
         for lightSet in lightSets: 
             cmds.lightlink(light=light, object=lightSet)
 
+def setShadow():
+    '''
+    setting god_ctrl switch depending on if the set is interior or not
+    last updated June 9, 2017
+    written by elaine! (from scratch!)
+    '''
+    #finding all the files in teh workspace being referenced
+    files_referenced = cmds.file(query=True, list=True)
+    #checking to see which file is the path for the set
+    for i in files_referenced:
+        if 'model' in i and 'set' in i and '.ma' in i: 
+            set_name = i
+    #finding all the God_ctrls in the workspace
+    god_ctrls = cmds.ls('*:God_Ctrl')
+    for j in god_ctrls:
+        god_geo_cmd  = j + '.switch'
+        if 'Interior' in set_name:
+            try: 
+        #setting interior shot, god control switch to geo
+                cmds.setAttr(god_geo_cmd, 1)
+            except: 
+                pass
+        else: 
+            try: 
+        #setting exterior shot, god control switch to light
+                cmds.setAttr(god_geo_cmd, 0)
+            except: 
+                pass
 
 
-def setRender():
+def main():
 
-    """
-    all the functions
-    """
+    minTime = cmds.playbackOptions(query=True, minTime=True)
+    maxTime = cmds.playbackOptions(query=True, maxTime=True)
+    currentTime = cmds.currentTime(1)
 
     camRigSetup()
-    bakeDynamicJoints()
-    timeShift()
+    bakeDynamicJoints(minTime, maxTime, currentTime)
+    timeShift(minTime, maxTime, currentTime)
     smoothGeo()
     constrainHead()
     shadowLightLinker()
+    setShadow()
+
+if __name__ == "__main__":
+    main()
