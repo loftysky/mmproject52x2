@@ -5,12 +5,13 @@ import errno
 import os
 import socket
 import subprocess
-from fractions import Fraction   
+from fractions import Fraction  
+
 from maya import cmds, standalone
+
 from sgfs import SGFS 
-import renderSetup as mmpr
 
-
+from . import setup
 
 
 #returns directory tree from args.scene and duplicates it on  CGartifacts
@@ -122,9 +123,10 @@ def main():
     out_name = name
 
     #call render setup
-    mmpr.main()
+    setup.setup_all()
     save_to_shadow_dimension(args.scene, args)
     os.execvp('farmsoup', farmsoup_command(out_name, args))
+
 
 if __name__ == "__main__":
     main()

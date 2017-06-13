@@ -1,12 +1,44 @@
-from maya import cmds
+from mayatools import context
+from mayatools import units
 from sgfs import SGFS
 
+from maya import cmds
 
 
-def camRigSetup():
+steps = []
+def _step(func):
+    steps.append(func)
+    return func
+
+
+def _get_reference(namespace):
+    """Get the (ref_node, filename) for a reference with the given namespace.
+
+    :raises: ``ValueError`` if no reference exists with the given namespace.
+
     """
-    looks through shotgun for path of latest camera rig set-up.
-    """
+
+    namespace = ':' + namespace.strip(':')
+
+    for filename in cmds.file(query=True, reference=True) or ():
+        try:
+            this_namespace = cmds.referenceQuery(filename, namespace=True)
+        except RuntimeError as e:
+            # We need a namespace, so screw it.
+            continue
+        if namespace == this_namespace:
+            node = cmds.referenceQuery(filename, referenceNode=True)
+            return node, filename
+
+    raise ValueError(namespace)
+
+
+@_step
+def assert_newest_camera():
+    """Update the camera rig to the newest version in Shotgun."""
+
+    # TODO: sg.find the PublishEvents directly (so we can fetch all info we need
+    # at once without a `fetch`).
     sgfs = SGFS()
     path = '/Volumes/CGroot/Projects/MM52x2/assets/utilities/Camera_rig/rig/published/maya_scene/camera_rig/'
     cam_entities = sgfs.entities_in_directory(path, entity_type='PublishEvent')
@@ -14,207 +46,192 @@ def camRigSetup():
     for i in cam_entities:
         if i[1].fetch('version') > version: 
             version = i[1].fetch('version')
-            latest_cam = i[1]
-    cam_path = latest_cam.fetch('path')
+            latest_cam_publish = i[1]
+    latest_cam_path = latest_cam_publish.fetch('path')
 
-    if cmds.ls('camRN') == []:
-        raise ValueError("no camera called camRN")
-    else: 
-        if cmds.referenceQuery('camRN', filename=True) != cam_path:
-            try: 
-                cmds.file(cam_path, options='v=0;', loadReference="camRN", type="mayaAscii")
-            except: 
-                raise ValueError("Error, no file found.") 
-
-def bakeDynamicJoints(minTime, maxTime, currentTime):
-    """
-    bake dynamic joints
-    written by Mike Waldrum
-    last updated by Kevin Zimny 
-    dated Nov 15/2016
-    """
-
-    #hide poly for faster simulation
-    cmds.modelEditor('modelPanel4', edit=True, polymeshes=False)
-        
-    #select all joints with the suffix "dynbake"
-    try: 
-        allJoints = cmds.select(cmds.ls('*dynbake*', recursive=True))
-    except: 
-        print ("no dynbakes found")    
-
-    else:     
-        #bake 
-        cmds.BakeSimulation(allJoints, time=(str(minTime)+":"+str(maxTime)))
-        #Set the in-tangent and out-tangent on selection
-        cmds.keyTangent(edit=True, outTangentType="step")
-            
-        #show poly
-        cmds.modelEditor('modelPanel4', edit=True, polymeshes=True)
-        cmds.select(clear=True)
-        
-    
-def timeShift(minTime, maxTime, currentTime):
-    #12 fps to 24 fps
-    #written By kevin Zimny
-    #last updated Nov 11 2016 
-    #instructions : just run script
-
-
-    #find the start and end frame of the timeslider
-
-    #hide poly for faster simulation
-    cmds.modelEditor('modelPanel4', edit=True, polymeshes=False)
-
-        
-    #select bake objects ie. ("*:*" + "*_Ctrl") and delects the flexi ctrls
-    try: 
-        allBakedObjects = cmds.ls('*:*_Ctrl')
-
-    except: 
-        raise ValueError("no Ctrl objects found")
-
-    else: 
-        bakedObjects = []
-        
-        for item in allBakedObjects:
-            if 'Flexi' not in item:
-                bakedObjects.append(item)
-
-        cmds.select(bakedObjects)
-        #bake 
-        cmds.BakeSimulation(bakedObjects, time=(str(minTime)+":"+str(maxTime)))
-               
-        #show poly
-        cmds.modelEditor('modelPanel4', edit=True, polymeshes=True)
-
-        #Set the in-tangent and out-tangent on selection
-        cmds.keyTangent(edit=True, outTangentType="step")
-            
-        #set to 24 fps
-        cmds.currentUnit(time='film')
-        cmds.select(clear=True)
-
-    
-def smoothGeo():
-    '''
-    smooth geo
-    written by Kevin Zimny
-    last updated : Nov 3 /2016
-    selects all geometry, sets smooth level in viewport to 1 and render time smoothing to 3 divisions.
-    '''
-
-    #select threeD geo group , because face planes can not be smoothed
-    try: 
-        cmds.select("*:threeD_geo_grp", hierarchy=True)
-
-    except: 
-        raise Exception("no threeD_geo_grp")
-
-    else: 
-        transforms = cmds.ls(selection=True, transforms=True)
-        polyMeshes = cmds.filterExpand(transforms, selectionMask=12)
-
-        #for everything selected sets smooth level in viewport to 1 and render time smoothing to 3 divisions.
-        for item in polyMeshes:
-            cmds.setAttr(str(item) + ".smoothLevel", 0)
-            cmds.setAttr(str(item) + ".displaySmoothMesh", 1)
-            cmds.setAttr(str(item) + ".renderSmoothLevel", 3)
-
-        cmds.select(clear=True)
-
-        #set render settings
-        #color management off
-            
-        cmds.colorManagementPrefs(edit=True, cmEnabled=False)
-        #Loads mentalRay if not yet active
-     
-        if 'Mayatomr' not in cmds.pluginInfo( query=True, listPlugins=True ):
-            cmds.loadPlugin("Mayatomr") 
-    
-        #sets Renderer to MentalRay
-        cmds.setAttr('defaultRenderGlobals.currentRenderer', 'mentalRay', type="string")
-
-def constrainHead():
-    '''
-    Constrain any in scene character's head to the main camera
-    instructions : just run script
-    written by Kevin Zimny
-    last updated Nov. 10
-    '''
-
-    #selects all the heads in the scene
     try:
-        heads = cmds.ls('*:head_Sdk') 
-    except:
-        raise Exception("no heads!") 
-    else:     
-        if "cam:MainCAM" in cmds.ls('cam:MainCAM'):
-            camera = 'cam:MainCAM'
-            for head in heads: 
-                cmds.aimConstraint(camera, head, offset=[0, 0, 0], weight=1, aimVector=[0, 0, 1], upVector=[0, 1, 0], worldUpType="object", worldUpObject="cam:MainCAM_up_loc")
-        else: 
-            raise ValueError("where is the main cam?!")
+        cam_ref_node, current_cam_path = _get_reference(':cam')
+    except ValueError:
+        raise ValueError("No \"cam\" namespace.")
 
-def shadowLightLinker():
-    '''
-    shadow light linker
-    written by Kevin Zimny
-    last updated Nov 16/2016
-    select's any character shadow lights light links them to the set group.
-    '''
-
-    #select all existing shadow lights and attach to an array
-    lights = cmds.ls("*:shadowLight_light")
-    lightSets = cmds.ls("*_lightLink*")
-
-    for light in lights: 
-        for lightSet in lightSets: 
-            cmds.lightlink(light=light, object=lightSet)
-
-def setShadow():
-    '''
-    setting god_ctrl switch depending on if the set is interior or not
-    last updated June 9, 2017
-    written by elaine! (from scratch!)
-    '''
-    #finding all the files in teh workspace being referenced
-    files_referenced = cmds.file(query=True, list=True)
-    #checking to see which file is the path for the set
-    for i in files_referenced:
-        if 'model' in i and 'set' in i and '.ma' in i: 
-            set_name = i
-    #finding all the God_ctrls in the workspace
-    god_ctrls = cmds.ls('*:God_Ctrl')
-    for j in god_ctrls:
-        god_geo_cmd  = j + '.switch'
-        if 'Interior' in set_name:
-            try: 
-        #setting interior shot, god control switch to geo
-                cmds.setAttr(god_geo_cmd, 1)
-            except: 
-                pass
-        else: 
-            try: 
-        #setting exterior shot, god control switch to light
-                cmds.setAttr(god_geo_cmd, 0)
-            except: 
-                pass
+    if current_cam_path != latest_cam_path:
+        # Let any exceptions raise up from here.
+        cmds.file(latest_cam_path, loadReference=cam_ref_node, type="mayaAscii")
 
 
-def main():
+def _bake(things):
 
     minTime = cmds.playbackOptions(query=True, minTime=True)
     maxTime = cmds.playbackOptions(query=True, maxTime=True)
-    currentTime = cmds.currentTime(1)
 
-    camRigSetup()
-    bakeDynamicJoints(minTime, maxTime, currentTime)
-    timeShift(minTime, maxTime, currentTime)
-    smoothGeo()
-    constrainHead()
-    shadowLightLinker()
-    setShadow()
+    # Hide poly for faster simulation.
+    # TODO: Query the API to figure out which panel this is for sure.
+    with context.command(cmds.modelEditor, 'modelPanel4', edit=True, polymeshes=False), context.selection(things, replace=True):
 
-if __name__ == "__main__":
-    main()
+        cmds.BakeSimulation(time='%s:%s' % (minTime, maxTime))
+
+        # Set the out-tangent; in-tangent cannot be set to "step".
+        cmds.keyTangent(edit=True, outTangentType="step")
+
+
+@_step
+def bake_dynamic_joints():
+
+    # Select all joints (with the suffix "dynbake").
+    all_joints = cmds.ls('*dynbake*', recursive=True)
+    if not all_joints:
+        print("No '*dynbake*' found; no dynamic joints to bake.")
+        return
+
+    _bake(all_joints)
+
+
+@_step
+def bake_controls():
+    """Bakes controls (at 12fps) so we can transition to 24fps."""
+
+    fps = units.get_fps()
+    if fps != 12:
+        raise ValueError('Must bake controls at 12fps; currently %s.' % fps)
+
+    #select bake objects ie. ("*:*" + "*_Ctrl") and delects the flexi ctrls
+    controls = cmds.ls('*:*_Ctrl') or ()
+    controls = [x for x in controls if 'Flexi' not in x]
+
+    if not controls:
+        raise ValueError("There are no '*:*_Ctrl' objects to bake.")
+
+    _bake(controls)
+   
+
+@_step
+def shift_time():
+    """Convert from 12 to 24fps."""
+    fps = units.get_fps()
+    if fps == 24:
+        return
+    if fps != 12:
+        cmds.warning('We expect FPS to be 12, but it is currently %s.' % fps)
+    units.set_fps(24)
+
+
+@_step
+def smooth_geo():
+    """Set smooth level in viewport to 1 and render time smoothing to 3 divisions."""
+
+    groups = cmds.ls("*:threeD_geo_grp") or ()
+    if not groups:
+        cmds.warning("No '*:threeD_geo_grp' groups.")
+        return
+
+    all_polygons = set()
+    for group in groups:
+        children = cmds.listRelatives(group, allDescendents=True, fullPath=True) or ()
+        for child in children:
+            polygons = cmds.filterExpand(child, selectionMask=12, fullPath=True) # 12 -> polygons (polymesh?)
+            all_polygons.update(polygons or ())
+
+    if not all_polygons:
+        raise ValueError("No polygons under '*:threeD_geo_grp' groups.")
+
+    for poly in all_polygons:
+        cmds.setAttr(poly + ".smoothLevel", 0)
+        cmds.setAttr(poly + ".displaySmoothMesh", 1)
+        cmds.setAttr(poly + ".renderSmoothLevel", 3)
+
+
+@_step
+def setup_renderer():
+
+    cmds.colorManagementPrefs(edit=True, cmEnabled=False)
+
+    # Load mentalRay if not yet active.
+    if 'Mayatomr' not in cmds.pluginInfo( query=True, listPlugins=True ):
+        cmds.loadPlugin('Mayatomr') 
+    
+    # Set Renderer to MentalRay.
+    cmds.setAttr('defaultRenderGlobals.currentRenderer', 'mentalRay', type='string')
+
+
+#@_step
+def constrain_head():
+    """Constrain any in scene character's head to the main camera."""
+
+    cmds.warning("You shouldn't need to constrain heads anymore. What are you calling this for?!")
+
+    heads = cmds.ls('*:head_Sdk')
+    if not heads:
+        cmds.warning("There are no '*:head_Sdk' to constrain.")
+        return
+
+    if not cmds.objExists('cam:MainCAM'):
+        raise ValueError("No 'cam:MainCAM'.")
+
+    camera = 'cam:MainCAM'
+    for head in heads: 
+        cmds.aimConstraint(camera, head,
+            offset=[0, 0, 0],
+            weight=1,
+            aimVector=[0, 0, 1],
+            upVector=[0, 1, 0],
+            worldUpType="object",
+            worldUpObject="cam:MainCAM_up_loc",
+        )
+
+
+@_step
+def shadow_light_linker():
+    """Light links character shadow lights to the set group."""
+
+    lights = cmds.ls("*:shadowLight_light")
+    light_sets = cmds.ls("*_lightLink*")
+
+    if not lights:
+        cmds.warning("No '*:shadowLight_light' in scene.")
+        return
+    if not light_sets:
+        cmds.warning("No '*_lightLink*' in scene.")
+        return
+
+    for light in lights: 
+        for light_set in light_sets: 
+            cmds.lightlink(light=light, object=light_set)
+
+
+@_step
+def set_shadow_switch():
+    """Set god_ctrl switch depending on if the set is interior or not."""
+
+    # Find the set.
+    # TODO: Moar SGFS.
+    files_referenced = cmds.file(query=True, list=True) or ()
+    for path in files_referenced:
+        if '/assets/sets/' not in path:
+            continue
+        if '/model/' not in path:
+            continue
+        break
+    else:
+        raise ValueError("Could not identify the set reference.")
+
+    # HACK: ...
+    is_interior = 'Interior' in path
+    print 'We have decided that the set is %san interior.' % ('' if is_interior else 'not ')
+    
+    # Find all the "switch"es on god controls, and turn them on if interior,
+    # and off otherwise.
+    god_ctrls = cmds.ls('*:God_Ctrl') or ()
+    for god_ctrl in god_ctrls:
+
+        switch = god_ctrl + '.switch'
+        if not cmds.objExists(switch):
+            continue # because not all gods have switches.
+
+        cmds.setAttr(switch, 1 if is_interior else 0)
+
+
+def setup_all():
+    for step in steps:
+        step()
+
+

@@ -12,6 +12,13 @@ setup(
     author='Elaine Wong',
     author_email='elainew@loftysky.com',
     license='BSD-3',
+    
+    metatools_scripts={
+        'mm52x2-submit-render': {
+            'entrypoint': 'mmproject52x2.render.submit:main',
+            'interpreter': 'mayapy',
+        }
+    },
 
     classifiers=[
         'Intended Audience :: Developers',
