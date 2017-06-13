@@ -144,7 +144,8 @@ def smooth_geo():
         raise ValueError("No polygons under '*:threeD_geo_grp' groups.")
 
     for poly in all_polygons:
-        cmds.setAttr(poly + ".smoothLevel", 0)
+        cmds.setAttr(poly + ".useSmoothPreviewForRender", 0)
+        cmds.setAttr(poly + ".smoothLevel", 0) # Preview.
         cmds.setAttr(poly + ".displaySmoothMesh", 1)
         cmds.setAttr(poly + ".renderSmoothLevel", 3)
 
@@ -163,7 +164,8 @@ def setup_renderer():
 
     # Set quality settings.
     # TODO: Kevin wants "Production", but...
-    cmds.nodePreset(load=('defaultRenderGlobals', 'FinalFrameEXR'))
+    cmds.nodePreset(load=('defaultRenderGlobals', 'FinalFrameEXR')) # No "Production" here.
+    cmds.nodePreset(load=('miDefaultOptions', 'FinalFrameEXR')) # There is a "Production" here.
 
 
 #@_step
@@ -245,7 +247,7 @@ def set_shadow_switch():
 
 def setup_all():
     for step in steps:
-        print '=>', step
+        print '=>', step.__name__
         step()
 
 
