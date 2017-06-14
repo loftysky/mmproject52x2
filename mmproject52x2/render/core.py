@@ -30,7 +30,7 @@ def pick_shadow_scene(scene):
     shadow_scene = '%s,%s%s' % (base, timestamp, ext)
     return shadow_scene
 
-def pick_out_dir(scene):
+def pick_out_base(scene):
     sgfs = SGFS()
     tasks = sgfs.entities_from_path(scene, entity_type='Task')
     task_path = sgfs.path_for_entity(tasks[0])
@@ -105,7 +105,7 @@ def get_render_range():
 
 
 
-def submit(scene, start=None, end=None, out_dir=None, name=None, shadow_scene=None, **kwargs):
+def submit(scene, start=None, end=None, out_base=None, out_dir=None, name=None, shadow_scene=None, **kwargs):
 
     if start is None or end is None:
 
@@ -123,7 +123,13 @@ def submit(scene, start=None, end=None, out_dir=None, name=None, shadow_scene=No
 
     name = name or pick_name(scene)
     shadow_scene = shadow_scene or pick_shadow_scene(scene)
-    out_dir = out_dir or pick_out_dir(scene)
+
+    if not out_dir:
+        if not out_base:
+            out_base = pick_out_base(scene)
+        out_dir = os.path.join(out_base, name)
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
 
     # TODO: Devmode without going into shebang cycle on Linux.
     setup_command = [
@@ -131,7 +137,7 @@ def submit(scene, start=None, end=None, out_dir=None, name=None, shadow_scene=No
         'mm52x2-render', '--setup',
         '-s', str(start),
         '-e', str(end),
-        '-o', out_dir,
+        '-O', out_dir,
         '-n', name,
         '--shadow-scene', shadow_scene,
         scene,
@@ -147,9 +153,6 @@ def submit(scene, start=None, end=None, out_dir=None, name=None, shadow_scene=No
         shell=True,
     )
 
-    frames_dir = os.path.join(out_dir, name)
-    if not os.path.exists(frames_dir):
-        os.makedirs(frames_dir)
     render_command = ['Render', 
 
         '-r', 'mr', # mr -> mentalray
@@ -163,7 +166,7 @@ def submit(scene, start=None, end=None, out_dir=None, name=None, shadow_scene=No
         '-x', '1920', # These should already be set.
         '-y', '1080', # These should already be set.
         
-        '-rd', frames_dir,
+        '-rd', out_dir,
         '-im', name,
         '-fnc', 'name.#.ext',
         
@@ -198,6 +201,7 @@ def submit(scene, start=None, end=None, out_dir=None, name=None, shadow_scene=No
 
     client = farmsoup.client.Client()
     group = client.submit(
+        id=int(os.environ.get('FARMSOUP_JOB_GROUP_ID', '0')) or None,
         name='mm52x2-render :: %s' % name,
         jobs=[setup_job, render_job, compress_job],
     )
@@ -233,8 +237,10 @@ def main():
         help="First frame.")
     global_args.add_argument('-e', '--end', type=int,
         help="Last frame.")
-    global_args.add_argument('-o', '--out-dir',
+    global_args.add_argument('-o', '--out-base',
         help="Base output directory.")
+    global_args.add_argument('-O', '--out-dir',
+        help="Actual output directory.")
     global_args.add_argument('-n', '--name',
         help="Name of output within directory.")
 

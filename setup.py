@@ -13,6 +13,12 @@ setup(
     author_email='elainew@loftysky.com',
     license='BSD-3',
     
+    entry_points={
+        'console_scripts': '''
+            mm52x2-render-all = mmproject52x2.render.schedule:main
+        ''',
+    },
+
     metatools_scripts={
         'mm52x2-render': {
             'entrypoint': 'mmproject52x2.render.core:main',
