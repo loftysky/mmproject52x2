@@ -43,7 +43,7 @@ def disable_hud_expressions():
 
 
 @_step
-def assert_newest_camera():
+def fetch_newest_camera():
     """Update the camera rig to the newest version in Shotgun."""
 
     # TODO: sg.find the PublishEvents directly (so we can fetch all info we need
@@ -150,24 +150,6 @@ def smooth_geo():
         cmds.setAttr(poly + ".renderSmoothLevel", 3)
 
 
-@_step
-def setup_renderer():
-
-    cmds.colorManagementPrefs(edit=True, cmEnabled=False)
-
-    # Load mentalRay if not yet active.
-    if 'Mayatomr' not in cmds.pluginInfo( query=True, listPlugins=True ):
-        cmds.loadPlugin('Mayatomr') 
-    
-    # Set Renderer to MentalRay.
-    cmds.setAttr('defaultRenderGlobals.currentRenderer', 'mentalRay', type='string')
-
-    # Set quality settings.
-    # TODO: Kevin wants "Production", but...
-    cmds.nodePreset(load=('defaultRenderGlobals', 'FinalFrameEXR')) # No "Production" here.
-    cmds.nodePreset(load=('miDefaultOptions', 'FinalFrameEXR')) # There is a "Production" here.
-
-
 #@_step
 def constrain_head():
     """Constrain any in scene character's head to the main camera."""
@@ -243,6 +225,35 @@ def set_shadow_switch():
             continue # because not all gods have switches.
 
         cmds.setAttr(switch, 1 if is_interior else 0)
+
+
+@_step
+def manage_colours():
+
+    cmds.colorManagementPrefs(e=True, cmEnabled=True)
+    cmds.colorManagementPrefs(e=True, cmConfigFileEnabled=False)
+
+    # These should be overkill together.
+    cmds.colorManagementPrefs(e=True, outputTransformEnabled=False)
+    cmds.colorManagementPrefs(e=True, outputTransformName='Raw')
+
+    cmds.colorManagementPrefs(e=True, renderingSpaceName='scene-linear Rec 709/sRGB')
+
+
+@_step
+def config_mentalray():
+    # Load mentalRay if not yet active.
+    if 'Mayatomr' not in cmds.pluginInfo(q=True, listPlugins=True):
+        cmds.loadPlugin('Mayatomr') 
+    
+    # Set Renderer to MentalRay.
+    cmds.setAttr('defaultRenderGlobals.currentRenderer', 'mentalRay', type='string')
+
+    # Set quality settings.
+    # Kevin wanted "Production", but lets just straight to "FinalFrameEXR"
+    # (also because 'defaultRenderGlobals' has no "Production").
+    cmds.nodePreset(load=('defaultRenderGlobals', 'FinalFrameEXR'))
+    cmds.nodePreset(load=('miDefaultOptions', 'FinalFrameEXR'))
 
 
 def setup_all():

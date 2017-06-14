@@ -80,12 +80,12 @@ def submit(scene, start=None, end=None, out_dir=None, name=None, shadow_scene=No
         '-s', '__F',
         '-e', '__F_end',
         '-cam', 'cam:MainCAM',
-        '-x', '1920',
-        '-y', '1080',
+        '-x', '1920', # These should already be set.
+        '-y', '1080', # These should already be set.
         '-rd', frames_dir,
         '-im', name,
         '-fnc', 'name.#.ext',
-        '-of', 'tga', # TODO: Find something better.
+        '-of', 'OpenEXR', # This should already be set.
         '-pad', '4',
         shadow_scene,
     ]
