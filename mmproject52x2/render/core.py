@@ -57,15 +57,15 @@ def get_render_range():
         cmds.warning("Could not get gPlayBackSlider.")
         sound_node = None
     
-    # If we can't get the active sound, then just look for a single sound node
+    # If we can't get the active sound, then just look for a single audio node
     # in the file.
     if not sound_node:
-        sound_nodes = cmds.ls(type='sound')
+        sound_nodes = cmds.ls(type='audio')
         if sound_nodes:
             if len(sound_nodes) == 1:
                 sound_node = sound_nodes[0]
             else:
-                raise ValueError("There are multiple sound nodes.")
+                raise ValueError("There are multiple audio nodes.")
 
     if sound_node:
 
