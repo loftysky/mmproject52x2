@@ -122,8 +122,14 @@ def main():
             defer_entities=True, makedirs=False, # So we can move it to artifacts.
         ) as publisher:
 
+            name = shot['code'] + '_v%04d' % publisher.version
+
             publisher.extra_fields['sg_status_list'] = 'ip' # In Progress
             publisher.review_version_fields['sg_status_list'] = 'na'
+
+            # Don't copy the playblast from the animation.
+            publisher.movie_path = None
+            publisher.movie_url = None
 
             for dir_ in publisher.iter_potential_directories():
                 dir_ = artifacts.to_shadow_dimension(dir_)
@@ -134,21 +140,20 @@ def main():
                         raise
                 else:
                     break
-
             publisher.directory = dir_
+
+            # Path to frames for RV
+            publisher.frames_path = os.path.join(dir_, 'images', '%s.####.exr' % name)
 
             scene = publisher.add_file(anim_scene)
 
-            publisher.path_to_frames = os.path.join(dir_, 'images')
-
-        name = shot['code'] + '_v%04d' % publisher.version
         base, ext = os.path.splitext(scene)
-        shadow_scene = base + '.to-render' + ext
+        shadow_scene = base + '.for-render' + ext
 
         command = [
             'mm52x2-render',
             '--name', name,
-            '--out-dir', publisher.path_to_frames,
+            '--out-dir', os.path.join(dir_, 'images'),
             '--shadow-scene', shadow_scene,
             scene
         ]
