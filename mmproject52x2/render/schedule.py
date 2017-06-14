@@ -1,9 +1,12 @@
 import argparse
 import os
+import fnmatch
+import errno
 
 from sgfs import SGFS
 from sgpublish import Publisher
 from farmsoup.client import Client
+from farmsoup.client.models import JobGroup
 
 from mmpipeline import artifacts
 
@@ -12,7 +15,10 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-P', '--project', default='/Volumes/CGroot/Projects/MM52x2')
-    parser.add_argument('-n', '--dry-run', action='store_true')
+    parser.add_argument('-N', '--name',
+        help='Only those matching this glob.')
+    parser.add_argument('-n', '--dry-run', action='count', default=0,
+        help='Once to not submit the job, twice to not make the publishes.')
     parser.add_argument('-c', '--count', type=int)
     #parser.add_argument('-v', '--verbose', action='store_true')
     args = parser.parse_args()
@@ -42,7 +48,7 @@ def main():
         'sg_type',
         'source_publish',
         'source_publishes',
-        'status_list',
+        'sg_status_list',
         'version',
         'path'
     ])
@@ -51,6 +57,10 @@ def main():
     latest_render = {}
 
     for publish in publishes:
+
+        # Ignore some by status.
+        if publish['sg_status_list'] in ('omt', ): # Omit
+            continue
 
         if publish['link.Task.step.Step.code'] == 'anim':
             if publish['sg_type'] != 'maya_scene':
@@ -67,13 +77,14 @@ def main():
             latest_dict[shot] = publish
 
     client = Client()
-    job = client.job(
-        name='mm52x2-render-all',
-    )
+    submitted = 0
 
-    for i, (shot, anim_publish) in enumerate(sorted(latest_anim.iteritems(), key=lambda (s, a): s['name'])):
+    for shot, anim_publish in sorted(latest_anim.iteritems(), key=lambda (s, a): s['name']):
 
-        if args.count and i >= args.count:
+        if args.count and submitted >= args.count:
+            continue
+
+        if args.name and not fnmatch.fnmatch(shot['code'], args.name):
             continue
 
         render_publish = latest_render.get(shot)
@@ -92,14 +103,19 @@ def main():
 
         if render_publish:
             render_sources = [render_publish['source_publish']] + render_publish['source_publishes']
-            if anim in render_sources:
+            if anim_publish in render_sources:
                 print 'Render is up to date; skipping.'
                 continue
             else:
                 print 'Render is out of date.'
 
+        submitted += 1
+
         anim_scene = anim_publish['path']
         print 'anim scene:', anim_scene
+
+        if args.dry_run > 1:
+            continue
 
         with Publisher(link=render_task, type='maya_render', name=shot['code'],
             template=anim_publish, review_version_fields={},
@@ -138,14 +154,23 @@ def main():
         ]
 
         print 'command: $', ' '.join(command)
-        continue
+        
+        if not args.dry_run:
 
-        job.add_subprocess(command,
-            name=name,
-        )
+            job = client.job(
+                name='Schedule.'
+            ).setup_subprocess(command,
+                name=name,
+            )
 
-    #group = client.submit(jobs=[job])
-    #print 'Submitted as', group.id
+            group = client.submit(
+                name='mm52x2-render :: ' + name,
+                jobs=[job],
+            )
+
+            print 'submitted group id:', group.id
+            print 'submitted job id:', job.id
+
 
 
 

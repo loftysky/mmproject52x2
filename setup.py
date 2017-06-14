@@ -15,7 +15,7 @@ setup(
     
     entry_points={
         'console_scripts': '''
-            mm52x2-render-all = mmproject52x2.render.schedule:main
+            mm52x2-render-schedule = mmproject52x2.render.schedule:main
         ''',
     },
 
