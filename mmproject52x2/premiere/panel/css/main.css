@@ -13,3 +13,8 @@ body {
     border-color: #313131;
 }
 
+.btn.btn-default {
+    background: #5C5C5C;
+    color: white;
+}
+

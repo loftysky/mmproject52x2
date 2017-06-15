@@ -120,9 +120,20 @@ var handleMessage = function (msg) {
 }
 
 
-M.send = function(msg) {
+var send_count = 0
+var resultCallbacks = {}
+
+M.send = function(msg, callback) {
 
     assertProc();
+
+    msg.id = ++send_count
+    if (callback) {
+        resultCallbacks[msg.id] = {
+            startTime: new Date(),
+            callback: callback
+        }
+    }
 
     var encoded = JSON.stringify(msg)
     log("Send:", encoded)
@@ -131,9 +142,35 @@ M.send = function(msg) {
 
 }
 
+M.handlers.result = function(msg) {
+
+    var id = msg.id
+    if (!id) {
+        return
+    }
+
+    var data = resultCallbacks[id]
+    resultCallbacks[id] = null
+
+    if (!data) {
+        return
+    }
+
+    data.callback(msg.result)
+
+}
+
+
+
+
+
+
+
+
+
 M.import = function() {
 
-    M.send({'type': 'ping', 'key': 123})
+    // M.send({'type': 'ping', 'key': 123})
 
 }
 

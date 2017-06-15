@@ -1,7 +1,15 @@
+from metatools.imports import load_entrypoint
+from Queue import Queue
 import argparse
+import json
 import os
 import sys
-import json
+import threading
+import weakref
+
+
+
+NoResult = object()
 
 
 def log(msg, *args, **kwargs):
@@ -19,19 +27,28 @@ def send(msg=None, **kwargs):
     sys.__stdout__.write(encoded + '\n')
     sys.__stdout__.flush()
 
+def reply(src, msg=None, **kwargs):
+    msg = dict(msg or {}).copy()
+    msg.update(kwargs)
+    id_ = src.get('id')
+    if id_ is not None:
+        msg.setdefault('id', id_)
+    send(msg)
 
-NoResult = object()
+def format_exception(e):
+    return dict(type='error', error_type=e.__class__.__name__, error=str(e))
 
 
-handlers = {}
+
+
+_handlers = {}
 
 def register(func):
     name = func.__name__
     if name.startswith('on_'):
         name = name[3:]
-    handlers[name] = func
+    _handlers[name] = func
     return func
-
 
 @register
 def on_hello(**kw):
@@ -49,6 +66,51 @@ def on_ping(**kw):
 def on_pong(**kw):
     return NoResult
 
+
+_call_count = 0
+_call_threads = weakref.WeakValueDictionary()
+
+@register
+def on_call(func, args=None, kwargs=None, **msg):
+
+    global _call_count
+    _call_count += 1
+
+    thread = _call_threads[_call_count] = threading.Thread(target=_call_thread, args=[msg, func, args, kwargs])
+    thread.daemon = True
+    thread.message = msg
+    thread.start()
+    del thread # Kill this reference immediately.
+
+    return NoResult
+
+
+def _call_thread(msg, entrypoint, args, kwargs):
+
+    log('Calling:', entrypoint)
+
+    try:
+        func = load_entrypoint(entrypoint, reload=None)
+    except Exception as e:
+        reply(msg, format_exception(e))
+        return
+
+    if not func:
+        send(type='error', error='Could not load entrypoint.', detail=entrypoint)
+        return
+
+    args = args or ()
+    kwargs = kwargs or {}
+
+    try:
+        res = func(*args, **kwargs)
+    except Exception as e:
+        reply(msg, format_exception(e))
+        return
+
+    if res is NoResult:
+        return
+    reply(msg, type='result', result=res)
 
 
 def main():
@@ -101,7 +163,7 @@ def main():
             send(type='error', error='malformed message', detail='no type')
             continue
 
-        func = handlers.get(type_)
+        func = _handlers.get(type_)
         if not func:
             send(type='error', error='unknown message type', detail=type_)
             continue
@@ -109,7 +171,7 @@ def main():
         try:
             res = func(**msg)
         except Exception as e:
-            send(type='error', error='{}: {}'.format(e.__class__.__name__, e))
+            send(format_exception(e))
             continue
         
         if res is NoResult:

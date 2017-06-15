@@ -13,20 +13,45 @@
 
     <script type="text/javascript">jQuery(function($) {
 
+    	var M = mm52x2
 
         console.log("[mm52x2] Starting: index.html")
 
         var devModeButton = $('#dev-mode')
-    	devModeButton.attr('checked', mm52x2.devMode)
+        var devControls = $('#dev-controls')
+
+        $('#dev-ping').on('click', function() {
+        	M.send({type: 'ping'})
+        })
+        M.handlers.pong = function(msg) {
+        	alert('PONG!')
+        }
+
+        $('#dev-getlogin').on('click', function() {
+        	M.send({type: 'call', func: 'os:getlogin'}, function(name) {
+        		alert("You are " + name)
+        	})
+        })
+
+        if (M.devMode) {
+	    	devModeButton.attr('checked', true)
+	    	devControls.removeClass('hide')
+	    }
+        
         devModeButton.on('click', function() {
         	devMode = devModeButton.is(':checked');
-	        mm52x2.setDevMode(devMode);
+	        M.setDevMode(devMode);
+
+	        // We only show the dev controls. We don't hide them again.
+	        if (devMode) {
+	        	devControls.show()
+	        }
         })
 
         var importButton = $('#import-button')
         	.attr('disabled', false)
         	.on('click', function() {
-        		mm52x2.import();
+        		M.import();
         	})
 
         $('#loading-warning').remove();
@@ -35,7 +60,7 @@
 
 <body>
 
-    <div id="loading-warning" class="alert alert-warning">Loading...</div>
+    <div id="loading-warning" class="alert alert-danger"><strong>Loading Error!</strong></div>
     
     <div class="well well-sm">
     	<p><strong>Import Renders</strong>
@@ -43,6 +68,12 @@
     </div>
 
     <div class="well well-sm">
-    	<label><input type="checkbox" id="dev-mode" /><small> Development mode</small></label>
+    	<p><strong>Development</strong>
+    	<p><label><input type="checkbox" id="dev-mode" /><small> Use dev mode.</small></label>
+    	<div id="dev-controls" class="hide">
+    		<div class="btn-group">
+    			<button id="dev-ping" class="btn btn-default btn-xs">Ping</button>
+    			<button id="dev-getlogin" class="btn btn-default btn-xs">Get Login</button>
+    	</div>
     </div>
 
