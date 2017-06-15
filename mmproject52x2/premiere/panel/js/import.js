@@ -24,6 +24,7 @@ M.import = function(glob, bin_name) {
         M.log('evalScript: ', source)
         window.__adobe_cep__.evalScript(source, function(res) {
             M.log("We are back!")
+            alert("Make sure to change their frame rate to 24!")
         })
 
     })
