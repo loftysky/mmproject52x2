@@ -87,7 +87,7 @@ def on_call(func, args=None, kwargs=None, **msg):
 
 def _call_thread(msg, entrypoint, args, kwargs):
 
-    log('Calling:', entrypoint)
+    log('Calling: {}', entrypoint)
 
     try:
         func = load_entrypoint(entrypoint, reload=None)

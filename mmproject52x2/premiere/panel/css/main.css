@@ -1,11 +1,19 @@
 
 body {
+
     margin: 1em;
+    
+    font-size: 12px;
 
     /* Copied from Premiere with "Digital Color Meter" */
     background: #272822;
     color: #B9B9B9;
 
+}
+
+h1 {
+    font-size: 16px;
+    margin: 0;
 }
 
 .well {

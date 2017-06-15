@@ -10,6 +10,7 @@ var mm52x2 = (function() {
 log('Starting main.js')
 
 var M = {}
+M.log = log
 
 M.devMode = window.localStorage.mm52x2_devMode == '1'
 M.setDevMode = function(x) {
@@ -163,16 +164,6 @@ M.handlers.result = function(msg) {
 
 
 
-
-
-
-
-
-M.import = function() {
-
-    // M.send({'type': 'ping', 'key': 123})
-
-}
 
 
 
