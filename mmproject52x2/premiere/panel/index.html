@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <meta charset="utf-8">
+    <title>MM52x2</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/main.css">
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="js/main.js"></script>
+
+    <script type="text/javascript">jQuery(function($) {
+
+
+        console.log("[mm52x2] Starting: index.html")
+
+        var devModeButton = $('#dev-mode')
+    	devModeButton.attr('checked', mm52x2.devMode)
+        devModeButton.on('click', function() {
+        	devMode = devModeButton.is(':checked');
+	        mm52x2.setDevMode(devMode);
+        })
+
+        var importButton = $('#import-button')
+        	.attr('disabled', false)
+        	.on('click', function() {
+        		mm52x2.import();
+        	})
+
+        $('#loading-warning').remove();
+
+    })</script>
+
+<body>
+
+    <div id="loading-warning" class="alert alert-warning">Loading...</div>
+    
+    <div class="well well-sm">
+    	<p><strong>Import Renders</strong>
+    	<p><button id="import-button" class="btn btn-sm btn-primary" disabled="disabled">Start Import</button>
+    </div>
+
+    <div class="well well-sm">
+    	<label><input type="checkbox" id="dev-mode" /><small> Development mode</small></label>
+    </div>
+
