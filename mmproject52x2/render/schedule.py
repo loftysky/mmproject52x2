@@ -15,12 +15,12 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-P', '--project', default='/Volumes/CGroot/Projects/MM52x2')
-    parser.add_argument('-N', '--name',
-        help='Only those matching this glob.')
     parser.add_argument('-n', '--dry-run', action='count', default=0,
         help='Once to not submit the job, twice to not make the publishes.')
     parser.add_argument('-c', '--count', type=int)
     #parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument('name',
+        help='Only those matching this glob.')
     args = parser.parse_args()
 
     sgfs = SGFS()
@@ -114,7 +114,7 @@ def main():
         anim_scene = anim_publish['path']
         print 'anim scene:', anim_scene
 
-        if args.dry_run > 1:
+        if args.dry_run: # > 1:
             continue
 
         with Publisher(link=render_task, type='maya_render', name=shot['code'],
@@ -164,7 +164,7 @@ def main():
 
             job = client.job(
                 name='Schedule.'
-            ).setup_subprocess(command,
+            ).setup_as_subprocess(command,
                 name=name,
             )
 
