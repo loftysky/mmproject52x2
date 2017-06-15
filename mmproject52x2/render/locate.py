@@ -14,7 +14,7 @@ def by_glob(glob):
 
     filters = [
         ('sg_type', 'is', 'maya_render'),
-        ('project.Project.id', 'is', 74)
+        ('project.Project.id', 'is', 74),
     ]
 
     shot_code_key = 'link.Task.entity.Shot.code'
@@ -35,17 +35,34 @@ def by_glob(glob):
     sgfs = SGFS()
     sg = sgfs.session
 
-    result = {}
+
+    by_task = {}
 
     for publish in sg.find('PublishEvent', filters, [
         shot_code_key,
         'path_to_frames',
+        'link',
+        'created_at',
     ]):
 
         shot_code = publish[shot_code_key]
         if glob and not fnmatch.fnmatch(shot_code, glob):
             continue
 
+        # We care about the latest one.
+        task = publish['link']
+        last = by_task.get(task)
+        if last and last['created_at'] > publish['created_at']:
+            continue
+        by_task[task] = publish
+
+
+
+    result = {}
+
+    for publish in by_task.itervalues():
+
+        shot_code = publish[shot_code_key]
         result[shot_code] = None
 
         path = publish['path_to_frames']
