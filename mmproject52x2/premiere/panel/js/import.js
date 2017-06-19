@@ -16,8 +16,11 @@ M.import = function(glob, binName) {
             }
         })
 
-        alert("Found " + total + " shots; " + (total - exists) + " were missing frames.")
-
+        var ok = confirm("Found " + total + " shots; " + (total - exists) + " were missing frames.\n\nImport these shots?")
+        if (!ok) {
+            return
+        }
+        
         M.callOurJSX('importImages', [images, binName], function(res) {
             M.log("We are back!")
             alert("Make sure to change their frame rate to 24!")

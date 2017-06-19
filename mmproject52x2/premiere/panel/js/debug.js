@@ -7,17 +7,11 @@ jQuery(function(J) {
 
     if (M.devMode) {
         devModeToggle.attr('checked', true)
-        devControls.removeClass('hide')
     }
     
     devModeToggle.on('click', function() {
         devMode = devModeToggle.is(':checked');
         M.setDevMode(devMode);
-
-        // We only show the dev controls. We don't hide them again.
-        if (devMode) {
-            devControls.removeClass('hide')
-        }
     })
 
     J('#dev-ping').on('click', function() {
@@ -34,10 +28,6 @@ jQuery(function(J) {
     J('#dev-reload').on('click', function() {
         location.reload()
     })
-
-    // J('#dev-console-toggle').on('click', function() {
-    //     $('#dev-console').toggleClass('hide')
-    // })
 
 
 })

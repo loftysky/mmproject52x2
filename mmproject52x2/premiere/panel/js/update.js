@@ -20,11 +20,14 @@ M._updateStage2 = function(res) {
             replacements[data.name] = data.path
         }
     }
-    alert('Found: '
+    var ok = confirm('Found: '
         + counts.newer + ' newer, '
         + counts.nochange + ' unchanged, and '
-        + counts.unknown + ' unknown.'
+        + counts.unknown + ' unknown.\n\nReplace footage?'
     )
+    if (!ok) {
+        return
+    }
 
     if (counts.newer) {
         M.callOurJSX('replaceFootage', [replacements], function(res) {})
