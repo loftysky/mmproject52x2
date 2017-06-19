@@ -26,3 +26,17 @@ h1 {
     color: white;
 }
 
+
+.float-right {
+    float: right;
+}
+
+
+#dev-console {
+    background: white;
+    color: black;
+    font-family: Monaco;
+    white-space: pre;
+    margin: 1em 0;
+    padding: 0.5ex;
+}

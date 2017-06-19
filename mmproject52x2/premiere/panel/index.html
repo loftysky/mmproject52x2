@@ -9,57 +9,16 @@
     <link rel="stylesheet" href="css/main.css">
 
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <!-- <script src="js/CSInterface.js"></script> -->
     <script src="js/main.js"></script>
+    <script src="js/debug.js"></script>
     <script src="js/import.js"></script>
+    <script src="js/update.js"></script>
 
-    <script type="text/javascript">jQuery(function($) {
-
-    	var M = mm52x2
+    <script type="text/javascript">jQuery(function(J) {
 
         console.log("[mm52x2] Starting: index.html")
-
-        var devModeButton = $('#dev-mode')
-        var devControls = $('#dev-controls')
-
-        $('#dev-ping').on('click', function() {
-        	M.send({type: 'ping'})
-        })
-        M.handlers.pong = function(msg) {
-        	alert('PONG!')
-        }
-
-        $('#dev-getlogin').on('click', function() {
-        	M.send({type: 'call', func: 'os:getlogin'}, function(name) {
-        		alert("You are " + name)
-        	})
-        })
-
-        if (M.devMode) {
-	    	devModeButton.attr('checked', true)
-	    	devControls.removeClass('hide')
-	    }
-        
-        devModeButton.on('click', function() {
-        	devMode = devModeButton.is(':checked');
-	        M.setDevMode(devMode);
-
-	        // We only show the dev controls. We don't hide them again.
-	        if (devMode) {
-	        	devControls.show()
-	        }
-        })
-
-        var importButton = $('#import-button')
-        	.attr('disabled', false)
-        	.on('click', function(e) {
-        		e.preventDefault()
-        		M.import(
-        			$('#import-glob').val(),
-        			$('#import-bin').val()
-        		);
-        	})
-
-        $('#loading-warning').remove();
+        J('#loading-warning').remove();
 
     })</script>
 
@@ -68,37 +27,58 @@
     <div id="loading-warning" class="alert alert-danger"><strong>Loading Error!</strong></div>
     
     <div class="well well-sm">
-    	<h1>Import Renders</h1>
-    	<p>
-    		<form class="form-horizontal">
-    		  <div class="form-group">
-    		    <label for="import-glob" class="col-sm-2 control-label">Shot Pattern</label>
-    		    <div class="col-sm-10">
-    		      <input class="form-control" id="import-glob" value="Sq01_*">
-    		    </div>
-    		  </div>
-    		  <div class="form-group">
-    		    <label for="import-bin" class="col-sm-2 control-label">Bin Name</label>
-    		    <div class="col-sm-10">
-    		      <input class="form-control" id="import-bin" value="New Renders">
-    		    </div>
-    		  </div>
-    		  <div class="form-group">
-			    <div class="col-sm-offset-2 col-sm-10">
-			      <button id="import-button" class="btn btn-sm btn-primary" disabled="disabled">Start Import</button>
-			    </div>
-			  </div>
-    		</form>
+        <h1>Import Renders</h1>
+        <p>
+            <form class="form-horizontal">
+              <div class="form-group">
+                <label for="import-glob" class="col-sm-2 control-label">Shot Pattern</label>
+                <div class="col-sm-10">
+                  <input class="form-control" id="import-glob" value="Sq01_*">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="import-bin" class="col-sm-2 control-label">Bin Name</label>
+                <div class="col-sm-10">
+                  <input class="form-control" id="import-bin" value="New Renders">
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                  <button id="import-button" class="btn btn-sm btn-primary" disabled="disabled">Start Import</button>
+                </div>
+              </div>
+            </form>
 
     </div>
 
     <div class="well well-sm">
-    	<h1>Development</h1>
-    	<p><label><input type="checkbox" id="dev-mode" /><small> Use dev mode.</small></label>
-    	<div id="dev-controls" class="hide">
-    		<div class="btn-group">
-    			<button id="dev-ping" class="btn btn-default btn-xs">Ping</button>
-    			<button id="dev-getlogin" class="btn btn-default btn-xs">Get Login</button>
-    	</div>
+        <h1>Update Renders</h1>
+        <p>
+            <form class="form-horizontal">
+              <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                  <button id="update-button" class="btn btn-sm btn-primary" disabled="disabled">Update Renders</button>
+                </div>
+              </div>
+            </form>
+
+    </div>
+
+
+    <div class="well well-sm">
+        <h1>Development</h1>
+        <p><label><input type="checkbox" id="dev-mode-toggle" /><small> Use dev mode.</small></label>
+        <div id="dev-controls" class="hide">
+            <div class="btn-group">
+                <button id="dev-ping" class="btn btn-default btn-xs">Ping Python</button>
+                <button id="dev-raise-error" class="btn btn-default btn-xs">Raise Error</button>
+                <button id="dev-list-footage" class="btn btn-default btn-xs">List Footage</button>
+            </div>
+            <div class="btn-group float-right">
+                <button id="dev-reload" class="btn btn-danger btn-xs"><span class="glyphicon glyphicon-refresh"></span> Reload</button>
+                <!-- <button id="dev-console-toggle" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-dashboard"></span> Console</button> -->
+            </div>
+            <!-- <textarea id="dev-console" class="hide">CONTENT</textarea> -->
+        </div>
     </div>
 

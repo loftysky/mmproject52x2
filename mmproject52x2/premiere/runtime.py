@@ -6,7 +6,7 @@ import os
 import sys
 import threading
 import weakref
-
+import traceback
 
 
 NoResult = object()
@@ -66,6 +66,10 @@ def on_ping(**kw):
 def on_pong(**kw):
     return NoResult
 
+@register
+def on_debug_raise_error(**kw):
+    raise ValueError(kw.get('message', 'This is a test.'))
+
 
 _call_count = 0
 _call_threads = weakref.WeakValueDictionary()
@@ -105,6 +109,7 @@ def _call_thread(msg, entrypoint, args, kwargs):
     try:
         res = func(*args, **kwargs)
     except Exception as e:
+        traceback.print_exc()
         reply(msg, format_exception(e))
         return
 
