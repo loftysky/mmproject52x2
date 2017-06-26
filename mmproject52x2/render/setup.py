@@ -1,6 +1,9 @@
+import os
+
 from mayatools import context
 from mayatools import units
 from sgfs import SGFS
+from sgpublish.check import check_paths
 
 from maya import cmds
 
@@ -43,29 +46,29 @@ def disable_hud_expressions():
 
 
 @_step
-def fetch_newest_camera():
-    """Update the camera rig to the newest version in Shotgun."""
+def update_references():
 
-    # TODO: sg.find the PublishEvents directly (so we can fetch all info we need
-    # at once without a `fetch`).
-    sgfs = SGFS()
-    path = '/Volumes/CGroot/Projects/MM52x2/assets/utilities/Camera_rig/rig/published/maya_scene/camera_rig/'
-    cam_entities = sgfs.entities_in_directory(path, entity_type='PublishEvent')
-    version = 0
-    for i in cam_entities:
-        if i[1].fetch('version') > version: 
-            version = i[1].fetch('version')
-            latest_cam_publish = i[1]
-    latest_cam_path = latest_cam_publish.fetch('path')
+    references = cmds.file(q=True, reference=True)
+    references = [path for path in references if cmds.referenceQuery(path, isLoaded=True)]
 
-    try:
-        cam_ref_node, current_cam_path = _get_reference(':cam')
-    except ValueError:
-        raise ValueError("No \"cam\" namespace.")
+    for status in check_paths(references):
 
-    if current_cam_path != latest_cam_path:
-        # Let any exceptions raise up from here.
-        cmds.file(latest_cam_path, loadReference=cam_ref_node, type="mayaAscii")
+        print status.path
+        if status.is_latest:
+            print '    Up to date.'
+            continue
+
+        new_path = status.latest['sg_path']
+        ext = os.path.splitext(new_path)[1]
+        if ext not in ('.ma', '.mb'):
+            cmds.warning('PublishEvent.sg_path is not a maya file: {}'.format(new_path))
+            continue
+
+        print '   Updating to', new_path
+
+        type_ = 'mayaAscii' if ext == '.ma' else 'mayaBinary'
+        node = cmds.referenceQuery(status.path, referenceNode=True)
+        cmds.file(new_path, loadReference=node, type=type_)
 
 
 def _bake(things):
