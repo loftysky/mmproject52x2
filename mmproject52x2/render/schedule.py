@@ -16,8 +16,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-P', '--project', default='/Volumes/CGroot/Projects/MM52x2')
     parser.add_argument('-n', '--dry-run', action='count', default=0,
-        help='Once to not submit the job, twice to not make the publishes.')
-    parser.add_argument('-c', '--count', type=int)
+        help="Don't actually submit anything.")
+    parser.add_argument('-f', '--force', action='store_true',
+        help="Re-render everything.")
+    parser.add_argument('-c', '--count', type=int,
+        help="Limit number of shots to render.")
     #parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('name',
         help='Only those matching this glob.')
@@ -104,8 +107,11 @@ def main():
         if render_publish:
             render_sources = [render_publish['source_publish']] + render_publish['source_publishes']
             if anim_publish in render_sources:
-                print 'Render is up to date; skipping.'
-                continue
+                if args.force:
+                    print 'Render is up to date; re-submitting.'
+                else:
+                    print 'Render is up to date; skipping.'
+                    continue
             else:
                 print 'Render is out of date.'
 
