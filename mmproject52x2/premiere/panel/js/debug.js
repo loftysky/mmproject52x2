@@ -25,6 +25,13 @@ jQuery(function(J) {
         M.send({type: 'debug_raise_error'})
     })
 
+    J('#dev-environ').on('click', function() {
+        M.send({type: 'call', func: 'mmproject52x2.premiere.runtime:debug_environ'}, function(res) {
+            alert(res)
+        })
+    })
+
+
     J('#dev-reload').on('click', function() {
         location.reload()
     })

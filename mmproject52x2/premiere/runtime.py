@@ -1,6 +1,7 @@
 from metatools.imports import load_entrypoint
 from Queue import Queue
 import argparse
+import datetime
 import json
 import os
 import sys
@@ -15,7 +16,7 @@ NoResult = object()
 def log(msg, *args, **kwargs):
     if args or kwargs:
         msg = msg.format(*args, **kwargs)
-    msg = '[mm52x2] ' + msg.strip() + '\n'
+    msg = '[mm52x2] {} {}\n'.format(datetime.datetime.now().isoformat('T'), msg.strip())
     sys.stderr.write(msg)
     sys.stderr.flush()
 
@@ -23,7 +24,7 @@ def send(msg=None, **kwargs):
     msg = dict(msg or {}).copy()
     msg.update(kwargs)
     encoded = json.dumps(msg, sort_keys=True)
-    print >> sys.stderr, '[mm52x5] Send:', encoded
+    log('Send: ' + encoded)
     sys.__stdout__.write(encoded + '\n')
     sys.__stdout__.flush()
 
@@ -69,6 +70,9 @@ def on_pong(**kw):
 @register
 def on_debug_raise_error(**kw):
     raise ValueError(kw.get('message', 'This is a test.'))
+
+def debug_environ():
+    return '\n'.join('{}: {!r}'.format(*x) for x in sorted(os.environ.iteritems()))
 
 
 _call_count = 0

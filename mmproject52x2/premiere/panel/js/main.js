@@ -14,6 +14,9 @@ var mm52x2 = (function() {
     var M = {}
     M.log = log
 
+    // Hooray for Node!
+    var spawn = require('child_process').spawn
+
     M.devMode = window.localStorage.mm52x2_devMode == '1'
     M.setDevMode = function(x) {
         M.devMode = !!x
@@ -21,37 +24,66 @@ var mm52x2 = (function() {
         window.localStorage.mm52x2_devMode = M.devMode ? '1' : '0'
     }
 
-    var pid = null
-    var proc = window.cep.process
+    var proc = null
 
     var assertProc = function() {
 
-        if (pid && proc.isRunning(pid).data) {
-            return
+        if (proc !== null) {
+            return proc
         }
 
         if (M.devMode) {
             log("Starting runtime in devMode.")
-            pid = proc.createProcess(
-                '/usr/local/vee/src/bin/vee', 'exec', '--dev',
-                'python', '-m', 'mmproject52x2.premiere.runtime'
-            ).data
+            proc = spawn('/bin/bash', [
+                '-lc', 'dev python -m mmproject52x2.premiere.runtime'
+            ])
         } else {
             log("Starting runtime.")
-            pid = proc.createProcess(
-                '/usr/local/vee/src/bin/vee', 'exec',
-                'python', '-m', 'mmproject52x2.premiere.runtime'
-            ).data
+            proc = spawn('/bin/bash', [
+                '-lc', 'python -m mmproject52x2.premiere.runtime'
+            ])
         }
         
-        pollStdout()
+        proc.stdout.on('data', onProcData)
+        proc.on('close', onProcClose)
+
+        return proc
+
+    }
+
+    var onProcData = function(data) {
+        
+        var out = data.toString()
+        var lines = out.split(/(\r?\n)+/g)
+
+        for (var i = 0; i < lines.length; i++) {
+            var encoded = lines[i]
+            encoded = encoded.replace(/^\s+|\s+$/g, '')
+            if (!encoded.length) {
+                continue
+            }
+            log("Recv:", encoded)
+
+            try {
+                var msg = JSON.parse(encoded)
+            } catch(e) {
+                log("Error during JSON.parse:", e)
+                continue
+            }
+
+            try {
+                handleMessage(msg)
+            } catch (e) {
+                log("Error during handleMessage:", e)
+            }
+        }
 
     }
 
 
-    var onQuit = function(reason) {
-        log("Runtime died:", reason)
-        pid = null;
+    var onProcClose = function(code) {
+        log("Runtime died:", code)
+        proc = null;
     }
 
     M.handlers = {};
@@ -72,40 +104,6 @@ var mm52x2 = (function() {
         alert((msg.error_type || 'Exception') + ' from Python: ' + (msg.error || '<< No message. >>'))
     }
 
-    var pollStdout = function() {
-        
-        if (!pid) {
-            return;
-        }
-        
-        if (!proc.stdout(pid, function(out) {
-            var lines = out.split(/(\r?\n)+/)
-            for (var i = 0; i < lines.length; i++) {
-                var encoded = lines[i]
-                encoded = encoded.replace(/^\s+|\s+$/g, '')
-                if (!encoded.length) {
-                    continue
-                }
-                log("Recv:", encoded)
-
-                var msg = JSON.parse(encoded)
-                try {
-                    handleMessage(msg)
-                } catch (e) {
-                    log("Error during handleMessage:", e)
-                }
-
-            }
-        })) {
-            return
-        }
-
-        if (proc.isRunning(pid).data) {
-            // We do need to keep calling this, unfortunately.
-            setTimeout(pollStdout, 30);
-        }
-
-    }
 
 
     var handleMessage = function (msg) {
@@ -132,7 +130,6 @@ var mm52x2 = (function() {
 
     M.send = function(msg, callback) {
 
-        assertProc();
 
         msg.id = ++send_count
         if (callback) {
@@ -143,9 +140,9 @@ var mm52x2 = (function() {
         }
 
         var encoded = JSON.stringify(msg)
-        log("Send:", encoded)
 
-        proc.stdin(pid, encoded + '\n')
+        assertProc().stdin.write(encoded + '\n')
+        log("Send:", encoded)
 
     }
 
