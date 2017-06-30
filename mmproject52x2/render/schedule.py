@@ -45,9 +45,11 @@ def main():
         ('project', 'is', proj),
         ('link.Task.step.Step.code', 'in', 'anim', 'render'),
     ]
-    if args.name and not args.name.count('*'):
+    globs = args.name.count('*')
+    classes = args.name.count('[')
+    if args.name and not globs and not classes:
         filters.append(('link.Task.entity.Shot.code', 'is', args.name))
-    if args.name and args.name.count('*') == 1 and args.name[-1] == '*':
+    if args.name and not classes and globs == 1 and args.name[-1] == '*':
         filters.append(('link.Task.entity.Shot.code', 'starts_with', args.name[:-1]))
 
     publishes = sgfs.session.find('PublishEvent', filters, [
