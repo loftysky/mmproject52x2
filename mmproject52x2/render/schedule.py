@@ -183,7 +183,8 @@ def main():
         if not args.dry_run:
 
             job = client.job(
-                name='Schedule.'
+                name='Schedule.',
+                priority=98, # Should be one higher than the rest.
             ).setup_as_subprocess(command,
                 name=name,
             )

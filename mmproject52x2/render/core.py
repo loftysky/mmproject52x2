@@ -168,6 +168,7 @@ def submit(scene, start=None, end=None, out_base=None, out_dir=None, name=None, 
     setup_job = farmsoup.client.models.Job(
         name='Render setup.',
         label='setup',
+        priority=99,
     ).setup_as_subprocess(
         # TODO: Remove hostname when farmsoup GUI scan identify the worker.
         ['hostname; ' + setup_command],
