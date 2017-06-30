@@ -21,7 +21,7 @@ def main():
         help="Re-render everything.")
     parser.add_argument('-c', '--count', type=int,
         help="Limit number of shots to render.")
-    #parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument('-v', '--verbose', action='count', default=0)
     parser.add_argument('name',
         help='Only those matching this glob.')
     args = parser.parse_args()
@@ -40,11 +40,17 @@ def main():
         render_tasks[shot] = task
 
     # Find all the anim and render publishes in the project so we may compare them.
-    print 'Loading all anim/render publishes.'
-    publishes = sgfs.session.find('PublishEvent', [
+    print 'Loading {} anim/render publishes'.format(args.name)
+    filters = [
         ('project', 'is', proj),
         ('link.Task.step.Step.code', 'in', 'anim', 'render'),
-    ], [
+    ]
+    if args.name and not args.name.count('*'):
+        filters.append(('link.Task.entity.Shot.code', 'is', args.name))
+    if args.name and args.name.count('*') == 1 and args.name[-1] == '*':
+        filters.append(('link.Task.entity.Shot.code', 'starts_with', args.name[:-1]))
+
+    publishes = sgfs.session.find('PublishEvent', filters, [
         'link.Task.entity',
         'link.Task.sg_status_list',
         'link.Task.step.Step.code',
@@ -96,9 +102,9 @@ def main():
         print
         print shot['code']
         print '-' * 40
-        print 'anim publish:', anim_publish
-        print 'render publish:', render_publish
         print 'render task:', render_task
+        print 'last anim publish:', anim_publish
+        print 'last render publish:', render_publish
 
         if not render_task:
             print 'ERROR: Cannot continue without render task.'
@@ -120,7 +126,7 @@ def main():
         anim_scene = anim_publish['path']
         print 'anim scene:', anim_scene
 
-        if args.dry_run: # > 1:
+        if args.dry_run > 1:
             continue
 
         with Publisher(link=render_task, type='maya_render', name=shot['code'],
@@ -138,6 +144,10 @@ def main():
             publisher.movie_url = None
 
             for dir_ in publisher.iter_potential_directories():
+
+                # if args.verbose:
+                    # print 'Potential publish:', dir_
+
                 dir_ = artifacts.to_shadow_dimension(dir_)
                 try:
                     os.makedirs(dir_)
@@ -146,6 +156,10 @@ def main():
                         raise
                 else:
                     break
+
+            if args.verbose:
+                print "new render publish dir:", dir_
+
             publisher.directory = dir_
 
             # Path to frames for RV
