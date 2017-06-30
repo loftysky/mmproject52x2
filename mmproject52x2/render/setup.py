@@ -46,6 +46,38 @@ def disable_hud_expressions():
 
 
 @_step
+def fetch_newest_camera():
+    """Update the camera rig to the newest version in Shotgun."""
+
+    # Note that we need to do this manually because there are a pile of shots
+    # that do not have the camera referenced at all.
+
+    try:
+        cam_ref_node, current_cam_path = _get_reference(':cam')
+    except ValueError:
+        raise ValueError("No \"cam\" namespace.")
+
+    sgfs = SGFS()
+
+    path = '/Volumes/CGroot/Projects/MM52x2/assets/utilities/Camera_rig/rig/published/maya_scene/camera_rig/'
+    found = sgfs.entities_in_directory(path, entity_type='PublishEvent')
+    if not found:
+        raise ValueError("No camera publishes?!")
+
+    publishes = [e for path, e in found]
+    sgfs.session.fetch(publishes, ['path', 'created_at'])
+    publishes.sort(key=lambda e: e['created_at'])
+    latest_cam_path = publishes[-1].fetch('path')
+
+    if current_cam_path == latest_cam_path:
+        print '    Up to date.'
+        return
+    
+    print '    Updating to', latest_cam_path     
+    type_ = 'mayaAscii' if latest_cam_path.endswith('.ma') else 'mayaBinary'
+    cmds.file(latest_cam_path, loadReference=cam_ref_node, type=type_)
+
+@_step
 def update_references():
 
     references = cmds.file(q=True, reference=True)
